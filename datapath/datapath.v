@@ -43,13 +43,13 @@ module datapath(clk, rst, op, func, RegDst, ALUSrc, MemtoReg, RegWr, MemWr, NPCo
 
     wire zero, zero_M, zero_W;
     wire [4: 0] shamt = instruction_D[10: 6];
-    wire [31: 0] data, ext_result, ext_result_M, ext_result_W, result, result_M;
+    wire [31: 0] data, ext_result, ext_result_M, ext_result_W, result, result_M, result_W;
     wire [15: 0] imm16 = instruction_D[15: 0];
 
-    wire [31: 0] dout, wd, wd_W;
+    wire [31: 0] dout, dout_W, wd, wd_W;
     wire [25: 0] target = instruction_D[25: 0];
 
-    wire RegDst_E, RegDst_M, RegDst_W, ALUSrc_E, MemtoReg_E, MemtoReg_M, RegWr_E, MemWr_E, MemWr_M, ExtOp_E, RegWr_M, RegWr_W, if_branch_E;
+    wire RegDst_E, RegDst_M, RegDst_W, ALUSrc_E, MemtoReg_E, MemtoReg_M, MemtoReg_W, RegWr_E, MemWr_E, MemWr_M, ExtOp_E, RegWr_M, RegWr_W, if_branch_E;
     wire [3: 0] ALUctr_E, NPCop_E, NPCop_M, NPCop_W;
     wire [4: 0] Rs_E, Rt_E, Rt_M, Rt_W, Rd_E, shamt_E, Rd_M, Rd_W;
     wire [15: 0] imm16_E;
@@ -85,14 +85,15 @@ module datapath(clk, rst, op, func, RegDst, ALUSrc, MemtoReg, RegWr, MemWr, NPCo
     //----------------访存阶段--------------------------
     dm_4k dm(result_M, rt_data_M, MemWr_M, clk, dout);  //这里的result是地址
 
-    mux2 regMux(result_M, dout, wd, MemtoReg_M);
-
     //-------------------------------------------------
-    MEM_WB Mem_Wb(clk, ext_result_M, Rd_M, PC_M, RegWr_M, NPCop_M, zero_M, wd, RegDst_M, Rt_M, target_M, 
-                       ext_result_W, Rd_W, PC_W, RegWr_W, NPCop_W, zero_W, wd_W, RegDst_W, Rt_W, target_W); // 第四个流水寄存器
+    MEM_WB Mem_Wb(clk, ext_result_M, Rd_M, PC_M, RegWr_M, NPCop_M, zero_M, RegDst_M, Rt_M, target_M, MemtoReg_M, result_M, dout, 
+                       ext_result_W, Rd_W, PC_W, RegWr_W, NPCop_W, zero_W, RegDst_W, Rt_W, target_W, MemtoReg_W, result_W, dout_W); // 第四个流水寄存器
 
     //----------------写回阶段--------------------------
-    regfile regfile(Rs, Rt, Rt_W, Rd_W, rs_data, rt_data, wd_W, RegWr_W, RegDst_W, clk); 
 
-    npc npc(PC_W, NPC, NPCop_W, target_W, ext_result_W, PC_plus_4, zero_W);
+    mux2 regMux(result_W, dout_W, wd, MemtoReg_W);
+
+    regfile regfile(Rs, Rt, Rt_W, Rd_W, rs_data, rt_data, wd, RegWr_W, RegDst_W, clk); 
+
+    npc npc(PC_W, NPC, NPCop_W, target_W, ext_result_W, PC_plus_4, zero_M);  // 这个地方和多拉贡的不同，他是在访存阶段就把信号传近来了，我这是等到了写回阶段再传给NPC
 endmodule
