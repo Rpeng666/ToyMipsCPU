@@ -42,3 +42,40 @@ module mux2(ALUoutput, MEMouput, Data, MemtoReg);
             end       
     end
 endmodule
+
+// Rs转发
+module mux3(Forward_RSE, alu_out , reg_wr_data, rs_data_E, rs_data_final);
+    input[1: 0] Forward_RSE;
+    input[31: 0] alu_out, reg_wr_data, rs_data_E; //alu_out是ALU算出的结果，reg_wr_data是准备写入寄存器堆的值
+    output reg[31: 0] rs_data_final;
+
+  always @(*) begin
+    case (Forward_RSE)
+        2'b10:
+            rs_data_final = alu_out;
+        2'b01:
+            rs_data_final = reg_wr_data;
+        2'b00:
+            rs_data_final = rs_data_E;
+    endcase
+  end
+endmodule
+
+// Rt转发
+module mux4(Forward_RTE, alu_out , reg_wr_data, rt_data_E, rt_data_final);
+    input[1: 0] Forward_RTE;
+    input[31: 0] alu_out, reg_wr_data, rt_data_E; //alu_out是ALU算出的结果，reg_wr_data是准备写入寄存器堆的值
+    output reg[31: 0] rt_data_final;
+
+  always @(*) begin
+    case (Forward_RTE)
+        2'b10:
+            rt_data_final = alu_out;
+        2'b01:
+            rt_data_final = reg_wr_data;
+        2'b00:
+            rt_data_final = rt_data_E;
+    endcase
+  end
+
+endmodule
