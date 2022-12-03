@@ -1,6 +1,6 @@
 module Forward(Rs_E, Rt_E, RegWrDst_W, RegWr_W, RegWrDst_M, RegWr_M, 
                 Forward_RSE, Forward_RTE);  // 转发模块
-    input[4: 0] Rs_E, Rt_E; // Ex阶段要处理的数据的来源地址Rs, Rt
+    input[4: 0] Rs_E, Rt_E; // ID阶段要处理的数据的来源地址Rs, Rt
     input[4: 0] RegWrDst_W; // 写回阶段时候要写入的地址
     input[4: 0] RegWrDst_M; // Ex_Mem阶段的地址，将来会变成RegWrDst_W
     input RegWr_W;    //写回阶段的写使能信号

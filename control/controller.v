@@ -1,4 +1,4 @@
-module controller(op, func, RegDst, ALUSrc, MemtoReg, RegWr, MemWr, NPCop, ExtOp, ALUctr, if_branch);
+module controller(op, func, RegDst, ALUSrc, MemtoReg, RegWr, MemWr, NPCop, ExtOp, ALUctr, if_branch, PC_D, if_undefined);
     // op,  // 指令的op段
     // func,  // 指令的func段
     // RegDst,    // 寄存器写入地址
@@ -11,8 +11,9 @@ module controller(op, func, RegDst, ALUSrc, MemtoReg, RegWr, MemWr, NPCop, ExtOp
     // ALUctr    // 控制ALU功能
 
     input [5:0]	op, func;
+    input [31: 0] PC_D;  // 目前译码指令的PC
 	
-	output reg RegDst, ALUSrc, MemtoReg, RegWr, MemWr, ExtOp, if_branch; // if_branch 是专门为branch指令适配的符号扩展信号，主要目的是左移两位
+	output reg RegDst, ALUSrc, MemtoReg, RegWr, MemWr, ExtOp, if_undefined, if_branch; // if_branch 是专门为branch指令适配的符号扩展信号，主要目的是左移两位
 	output reg[3:0]	ALUctr, NPCop;
 
     // 所有的跳转信号，虽然写的时候只支持两种Jump和Branch
@@ -37,7 +38,7 @@ module controller(op, func, RegDst, ALUSrc, MemtoReg, RegWr, MemWr, NPCop, ExtOp
     parameter ADDIU = 4'b0101;
     parameter SUB   = 4'b0110;
     parameter ADDI  = 4'b0111;
-    parameter SLL   = 4'b1000;
+    // parameter SLL   = 4'b1000;
     parameter SLT   = 4'b1001;   
     parameter LUI   = 4'b1111;  // 实在没办法处理这个，特殊处理吧
 
@@ -52,6 +53,7 @@ module controller(op, func, RegDst, ALUSrc, MemtoReg, RegWr, MemWr, NPCop, ExtOp
                     MemWr    = 1'b0; // 不需要写存储器
                     NPCop    = ADD4;
                     if_branch = 1'b0;
+                    if_undefined = 1'b0;
                     case(func)
                             6'b100000: ALUctr = ADD;
                             6'b100010: ALUctr = SUB;
@@ -59,7 +61,11 @@ module controller(op, func, RegDst, ALUSrc, MemtoReg, RegWr, MemWr, NPCop, ExtOp
                             6'b100101: ALUctr = OR;
                             6'b101010: ALUctr = SLT;
                             6'b100110: ALUctr = XOR;
-                            6'b000000: ALUctr = SLL;
+                            // 6'b000000: ALUctr = SLL;
+                            default: begin
+                                $display("undefine:%h", PC_D);
+                                if_undefined = 1'b1;
+                            end
                     endcase
                 end
             
@@ -74,6 +80,7 @@ module controller(op, func, RegDst, ALUSrc, MemtoReg, RegWr, MemWr, NPCop, ExtOp
                     ExtOp    = 1'b1;
                     ALUctr	 = ADDIU;				//addiu
                     if_branch = 1'b0;
+                    if_undefined = 1'b0;
                 end
 
             6'b001000:	//addi
@@ -87,6 +94,7 @@ module controller(op, func, RegDst, ALUSrc, MemtoReg, RegWr, MemWr, NPCop, ExtOp
                     ExtOp    = 1'b0;
                     ALUctr	 = ADDI;				//addi
                     if_branch = 1'b0;
+                    if_undefined = 1'b0;
                 end
 
             6'b001101:	//ori
@@ -100,6 +108,7 @@ module controller(op, func, RegDst, ALUSrc, MemtoReg, RegWr, MemWr, NPCop, ExtOp
                     ExtOp    = 1'b0;
                     ALUctr	=	ORI;				//ori
                     if_branch = 1'b0;
+                    if_undefined = 1'b0;
                 end
             
             6'b001111:	//lui
@@ -113,6 +122,7 @@ module controller(op, func, RegDst, ALUSrc, MemtoReg, RegWr, MemWr, NPCop, ExtOp
                     ALUctr   = LUI ;
                     NPCop    = ADD4;			//lui
                     if_branch = 1'b0;
+                    if_undefined = 1'b0;
                 end
 
             6'b100011:	//lw
@@ -127,6 +137,7 @@ module controller(op, func, RegDst, ALUSrc, MemtoReg, RegWr, MemWr, NPCop, ExtOp
                     ALUctr   = ADD;
                     NPCop   =  ADD4;	
                     if_branch = 1'b0;
+                    if_undefined = 1'b0;
                 end
 
             6'b101011:	//sw
@@ -141,6 +152,7 @@ module controller(op, func, RegDst, ALUSrc, MemtoReg, RegWr, MemWr, NPCop, ExtOp
                     ALUctr   = ADD;
                     NPCop   =   ADD4;
                     if_branch = 1'b0;
+                    if_undefined = 1'b0;
                 end
 
             6'b000100:	//beq
@@ -155,6 +167,7 @@ module controller(op, func, RegDst, ALUSrc, MemtoReg, RegWr, MemWr, NPCop, ExtOp
                     NPCop    = BEQ;	
                     ExtOp    = 1'b1;
                     if_branch = 1'b1;
+                    if_undefined = 1'b0;
                 end
 
             6'b000010:	//jump
@@ -165,7 +178,16 @@ module controller(op, func, RegDst, ALUSrc, MemtoReg, RegWr, MemWr, NPCop, ExtOp
                     MemWr    = 1'b0; // 不需要写存储器
                     NPCop   = JUMP;			//Jump
                     if_branch = 1'b0;
+                    if_undefined = 1'b0;
                 end
+            
+            default : begin
+                NPCop = ADD4;  //flush后的xxx未定态也要NPCop
+                if(op) begin  // 但是flush后的未定态就不要判断是不是未定义指令了
+                        if_undefined = 1'b1;
+                        $display("undefine:%h", PC_D);
+                    end
+            end
         endcase
 
         // $display("(controller.v) op: %b func: %b", op, func);

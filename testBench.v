@@ -13,7 +13,7 @@ module Testbench();
             $dumpvars;
             clk <= 0 ;
             rst <= 1 ;
-            #10 rst <= 0 ; 
+            #10 rst <= 0 ;
             #2000 $finish;
         end
             
@@ -24,6 +24,5 @@ module Testbench();
          #20 clk<=~clk;
          cnt = cnt + 1;
     end
-       
     
 endmodule

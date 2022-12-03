@@ -1,11 +1,11 @@
-module npc(PC, NPC, NPCop, target, ext_result, PC_plus_4, zero);
+module npc(PC, NPC, NPCop, target, ext_result, PC_plus_4, zero_D);
     input [31:0] PC;
     input [25: 0] target;
     input [31 :0] ext_result, PC_plus_4;
     input [3: 0] NPCop;
-    input zero;
+    input zero_D;
 
-    output reg[31: 0] NPC;
+    output reg[31: 0] NPC = 32'h3000;
 
 
     // 所有的跳转信号，虽然写的时候只支持两种Jump和Branch
@@ -23,11 +23,13 @@ module npc(PC, NPC, NPCop, target, ext_result, PC_plus_4, zero);
 
   always @(*) begin
     NPC = PC_plus_4;
-    case(NPCop)
-        JUMP : NPC = {PC[31: 28], target << 2};
-        BEQ : NPC = (zero == 1) ? (PC + 4 + ext_result): (PC + 4);
-        // ADD4: NPC = PC + 4;  在流水线中，下一条指令早就被执行了，所以这里就不重复执行了
-    endcase
+
+    if(NPCop == JUMP) begin
+      NPC = {PC[31: 28], target << 2};
+    end
+    else if(NPCop == BEQ) begin
+      NPC = (zero_D == 1) ? (PC + 4 + ext_result) : PC_plus_4;
+    end
     // $display("(NPC.v) zero = %h npc = %h", zero, NPC);
   end
 

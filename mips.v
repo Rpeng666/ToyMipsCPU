@@ -16,7 +16,9 @@ module Mips(clk, rst);
     wire [3: 0] NPCop;
     wire ExtOp;
     wire [3: 0] ALUctr;
+    wire if_undefined;
     wire if_branch;
+    wire [31: 0] PC_D;
 
 
     // 根据传入的op，func，rt，生成各种信号并输出
@@ -31,7 +33,9 @@ module Mips(clk, rst);
         NPCop, // 判断跳转类型是Jump，Beq还是其他
         ExtOp,    // 是否符号扩展
         ALUctr,    // 控制ALU功能
-        if_branch  // 用来判断是否是branch指令的信号，因为branch指令符号扩展稍微有点特殊
+        if_branch,  // 用来判断是否是branch指令的信号，因为branch指令符号扩展稍微有点特殊
+        PC_D,  // 目前译码指令的PC
+        if_undefined  // 判断是否是未定义的指令
         );
         
     datapath datapath(
@@ -47,7 +51,9 @@ module Mips(clk, rst);
         NPCop, // 判断跳转类型是Jump，Beq还是其他
         ExtOp,    // 是否符号扩展的信号
         ALUctr,    // 控制ALU功能的信号
-        if_branch
+        if_branch,
+        PC_D,  // 目前译码指令的PC
+        if_undefined  // 判断是否是未定义的指令
         );
 
     

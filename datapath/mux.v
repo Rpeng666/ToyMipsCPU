@@ -52,11 +52,11 @@ module mux3(Forward_RSE, alu_out , reg_wr_data, rs_data_E, rs_data_final);
   always @(*) begin
     case (Forward_RSE)
         2'b10:
-            rs_data_final = alu_out;
+            rs_data_final <= alu_out;
         2'b01:
-            rs_data_final = reg_wr_data;
+            rs_data_final <= reg_wr_data;
         2'b00:
-            rs_data_final = rs_data_E;
+            rs_data_final <= rs_data_E;
     endcase
   end
 endmodule
@@ -70,12 +70,50 @@ module mux4(Forward_RTE, alu_out , reg_wr_data, rt_data_E, rt_data_final);
   always @(*) begin
     case (Forward_RTE)
         2'b10:
-            rt_data_final = alu_out;
+            rt_data_final <= alu_out;
         2'b01:
-            rt_data_final = reg_wr_data;
+            rt_data_final <= reg_wr_data;
         2'b00:
-            rt_data_final = rt_data_E;
+            rt_data_final <= rt_data_E;
     endcase
+  end
+
+endmodule
+
+// 决定IF_ID能否写入
+module mux5(C_L_DE_Rs, C_L_DE_Rt, C_B_D, IF_ID_wr);
+    input C_L_DE_Rs, C_L_DE_Rt, C_B_D;
+    output reg IF_ID_wr = 1'b1;
+
+  always @(*) begin
+    if(C_L_DE_Rs | C_L_DE_Rt | C_B_D) IF_ID_wr = 1'b0;
+    else IF_ID_wr = 1'b1;
+  end
+
+endmodule
+
+module mux6(if_branch, zero_D, IF_ID_flush);  // 决定IF_ID是否要flush
+    input if_branch;
+    input zero_D;
+
+    output reg IF_ID_flush = 1'b0;
+
+  always @(*) begin
+    if(if_branch & zero_D) IF_ID_flush = 1'b1;
+    else IF_ID_flush = 1'b0;
+  end
+
+endmodule
+
+
+module mux7(C_L_DE_Rs, C_L_DE_Rt, C_B_D, PCEnF); 
+    input C_L_DE_Rs, C_L_DE_Rt, C_B_D;
+
+    output reg PCEnF = 1'b1;
+
+  always @(*) begin
+    if(C_L_DE_Rs | C_L_DE_Rt | C_B_D) PCEnF = 1'b0;
+    else PCEnF = 1'b1;
   end
 
 endmodule
